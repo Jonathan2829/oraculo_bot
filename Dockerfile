@@ -7,4 +7,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD ["python", "-m", "oraculo_bot.main"]
+CMD ["python", "-m", "oraculo_bot.main"]", "oraculo_bot.main"]
