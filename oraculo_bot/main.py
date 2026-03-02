@@ -1,5 +1,7 @@
 ﻿import asyncio
 import time
+import signal
+
 from oraculo_bot.config import load_settings
 from oraculo_bot.logger import setup_logger
 from oraculo_bot.exchange.binance_client import BinanceClient
@@ -36,6 +38,16 @@ async def main():
     settings = load_settings()
     log.info("Oráculo Pro iniciando...")
 
+    # --- Graceful shutdown (Fly envía SIGINT/SIGTERM) ---
+    stop_event = asyncio.Event()
+    loop = asyncio.get_running_loop()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        try:
+            loop.add_signal_handler(sig, stop_event.set)
+        except NotImplementedError:
+            # En algunos entornos no se puede registrar signal handlers (ej. Windows)
+            pass
+
     db = Database()
     db.init_db()
 
@@ -61,9 +73,11 @@ async def main():
 
     reconciler = Reconciler(ex, trade_store)
 
-    scheduler = Scheduler(settings, market_data, order_mgr, trade_store,
-                          state_machine, position_mgr, risk_mgr, notifier,
-                          funding_filter=funding_filter)
+    scheduler = Scheduler(
+        settings, market_data, order_mgr, trade_store,
+        state_machine, position_mgr, risk_mgr, notifier,
+        funding_filter=funding_filter
+    )
 
     symbols = settings.symbols
     if settings.auto_universe:
@@ -82,7 +96,7 @@ async def main():
     asyncio.create_task(healthcheck_loop(ex, settings))
 
     try:
-        while True:
+        while not stop_event.is_set():
             try:
                 await reconciler.run_once()
 
@@ -118,13 +132,26 @@ async def main():
                             await notifier.send(msg)
                         await asyncio.sleep(0.1)
 
-                await asyncio.sleep(settings.scan_interval_seconds)
+                # En vez de sleep “a pelo”, esperamos o timeout o señal de parada
+                try:
+                    await asyncio.wait_for(stop_event.wait(), timeout=settings.scan_interval_seconds)
+                except asyncio.TimeoutError:
+                    pass
 
             except Exception:
                 log.exception("Error en loop principal")
                 await asyncio.sleep(5)
+
+    except asyncio.CancelledError:
+        # Fly puede cancelar tareas durante shutdown
+        log.info("Shutdown recibido (CancelledError). Cerrando limpio...")
+
     finally:
-        await ex.close()
+        log.info("Cerrando exchange...")
+        try:
+            await ex.close()
+        except Exception:
+            pass
 
 if __name__ == "__main__":
     asyncio.run(main())
