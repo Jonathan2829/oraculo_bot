@@ -1,0 +1,34 @@
+﻿from enum import Enum
+
+class OrderSide(Enum):
+    BUY = "BUY"
+    SELL = "SELL"
+
+class OrderType(Enum):
+    LIMIT = "LIMIT"
+    MARKET = "MARKET"
+    STOP_MARKET = "STOP_MARKET"
+    TAKE_PROFIT_MARKET = "TAKE_PROFIT_MARKET"
+
+class TradeState(Enum):
+    NEW = "NEW"
+    ENTRY_PLACED = "ENTRY_PLACED"
+    ENTRY_PARTIAL = "ENTRY_PARTIAL"
+    ENTRY_FILLED = "ENTRY_FILLED"
+    PROTECTIVE_PLACED = "PROTECTIVE_PLACED"
+    RUNNING = "RUNNING"
+    EXIT_REQUESTED = "EXIT_REQUESTED"
+    CLOSED_TP = "CLOSED_TP"
+    CLOSED_SL = "CLOSED_SL"
+    CLOSED_MANUAL = "CLOSED_MANUAL"
+    FAILED = "FAILED"
+    DONE = "DONE"
+
+class CloseReason(Enum):
+    TP = "TP"
+    SL = "SL"
+    TIMEOUT = "TIMEOUT"
+    PANIC = "PANIC"
+    MANUAL = "MANUAL"
+    ERROR = "ERROR"
+    EXCHANGE_CLOSED = "EXCHANGE_CLOSED"
