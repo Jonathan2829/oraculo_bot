@@ -2,6 +2,3 @@
 python-dotenv>=1.0.1
 requests>=2.32.3
 pandas>=2.2.3
-pandas-ta>=0.3.14b0
-tenacity>=8.5.0
-numpy>=1.26.0
